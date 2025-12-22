@@ -1,7 +1,6 @@
 # syntax=docker/dockerfile:1.7
 #
-# Deterministic + cache-friendly + CUDA-capable ebook2audiobook build
-# with baked UniDic + Stanza models (no runtime downloads).
+# Deterministic + cache-friendly + CUDA-capable ebook2audiobook build.
 #
 # Notes on determinism:
 # - CUDA base is pinned by digest.
@@ -142,16 +141,6 @@ assert torch.version.cuda and str(torch.version.cuda).startswith('12.1') \
 # Now copy the full app repo (late, so code edits don't bust dependency cache)
 ######################################################################
 COPY . /app/ebook2audiobook
-
-######################################################################
-# Bake UniDic (optional)
-######################################################################
-ARG BAKE_UNIDIC=1
-RUN if [ "$BAKE_UNIDIC" = "1" ]; then \
-      conda run -n "$PY_ENV" python -m unidic download; \
-    else \
-      echo "Skipping UniDic download (BAKE_UNIDIC=0)"; \
-    fi
 
 # CUDA runtime preflight: fail loud, no silent CPU fallback
 ######################################################################
