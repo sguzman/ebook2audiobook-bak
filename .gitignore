@@ -1,0 +1,7 @@
+lib
+models
+.venv
+python_env
+tmp
+book.*
+*.txt
