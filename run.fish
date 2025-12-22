@@ -7,7 +7,6 @@ docker run -it --gpus all --name e2a-gui -p 7860:7860 \
     -v "/drive/cache/dot-cache/huggingface:/opt/cache/huggingface" \
     -v "/drive/AI/dicdir:/home/user/.local/share/unidic:ro" \
     -v "/drive/AI/stanza:/app/ebook2audiobook/models/stanza" \
-    -v (pwd)"/functions.py:/app/ebook2audiobook/lib/functions.py:ro" \
     -v (pwd)/app.py:/app/ebook2audiobook/app.py:ro \
     -e STANZA_RESOURCES_DIR="/app/ebook2audiobook/models/stanza" \
     -e PYTHONUNBUFFERED=1 \
