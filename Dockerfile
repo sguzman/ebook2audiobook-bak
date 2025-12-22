@@ -158,7 +158,7 @@ PY
 ######################################################################
 RUN useradd -m -u 1000 user \
  && mkdir -p /opt/cache \
- && chown -R user:user /app /opt/cache
+ && chown -R user:user /app /opt/cache /opt/venv
 
 USER user
 
