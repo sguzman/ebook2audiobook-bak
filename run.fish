@@ -17,4 +17,4 @@ docker run -it --gpus all --name e2a-gui -p 7860:7860 \
     -e GRADIO_SERVER_NAME="0.0.0.0" \
     -e GRADIO_SERVER_PORT="7860" \
     ebook2audiobook:cu121 \
-    /opt/conda/envs/py312/bin/python -u -X faulthandler app.py
+    /opt/venv/bin/python -u -X faulthandler app.py
