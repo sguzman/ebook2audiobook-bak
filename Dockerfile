@@ -62,7 +62,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 ######################################################################
 # Python env: pin Python + pip versions (single source of truth for env)
 ######################################################################
-ARG UV_VERSION="0.5.7"
 ARG PYTHON_VERSION="3.12.4"
 ARG PIP_VERSION="24.2"
 ARG VENV_DIR="/opt/venv"
@@ -71,7 +70,7 @@ ARG VENV_DIR="/opt/venv"
 ARG SETUPTOOLS_VERSION="75.1.0"
 ARG WHEEL_VERSION="0.44.0"
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh -s -- --version "${UV_VERSION}"
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ENV PATH="/root/.local/bin:${VENV_DIR}/bin:${PATH}"
 
