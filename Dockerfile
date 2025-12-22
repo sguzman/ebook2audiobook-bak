@@ -113,7 +113,6 @@ RUN --mount=type=bind,from=uv-cache,source=.,target=/opt/cache/uv,rw \
 RUN --mount=type=bind,from=uv-cache,source=.,target=/opt/cache/uv,rw \
     uv pip install --python "${VENV_DIR}/bin/python" \
       --constraint /tmp/constraints.txt \
-      --prefer-binary \
       --extra-index-url "$TORCH_INDEX_URL" \
       -r requirements.txt
 
