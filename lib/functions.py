@@ -2356,9 +2356,16 @@ def convert_ebook(args:dict)->tuple:
                                     if session['tts_engine'] == TTS_ENGINES['BARK']:
                                         os.environ['SUNO_USE_SMALL_MODELS'] = 'False'                        
                             if session['device'] == devices['CUDA']['proc']:
-                                session['device'] = session['device'] if devices['CUDA']['found'] else devices['CPU']['proc']
+                                try:
+                                    import torch
+                                    cuda_found = bool(torch.cuda.is_available())
+                                except Exception:
+                                    cuda_found = False
+
+                                session['device'] = session['device'] if cuda_found else devices['CPU']['proc']
                                 if session['device'] == devices['CPU']['proc']:
                                     msg += f'CUDA not supported by the Torch installed!<br/>Read {default_gpu_wiki}<br/>Switching to CPU'
+
                             elif session['device'] == devices['MPS']['proc']:
                                 if not devices['MPS']['found']:
                                     session['device'] = devices['CPU']['proc']
