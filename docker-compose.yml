@@ -28,6 +28,7 @@ services:
 
     volumes:
       - .:/app:rw      # Bind mount current directory – works everywhere
+      - /drive/cache/dot-cache/uv:/opt/cache/uv:rw
 
     restart: unless-stopped
 
@@ -35,3 +36,4 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - UV_CACHE_DIR=/opt/cache/uv

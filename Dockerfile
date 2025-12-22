@@ -4,10 +4,9 @@
 #
 # Notes on determinism:
 # - CUDA base is pinned by digest.
-# - Miniconda installer is pinned by version + sha256.
-# - ebook2audiobook is pinned by release tag + commit SHA check.
+# - uv and Python are pinned by version.
 # - torch/vision/audio are pinned to a known matching cu121 trio per PyTorch docs.
-# - apt + conda are not fully reproducible over time unless you also lock/snapshot repos.
+# - apt and pip ecosystems are not fully reproducible over time unless you also lock/snapshot repos.
 
 ######################################################################
 # Runtime image (CUDA devel + pinned Python stack)
@@ -29,6 +28,10 @@ ENV XDG_CACHE_HOME=/opt/cache \
     TRANSFORMERS_CACHE=/opt/cache/huggingface/transformers \
     TORCH_HOME=/opt/cache/torch \
     STANZA_RESOURCES_DIR=/opt/cache/stanza
+
+# uv cache (bind-mount at runtime to persist wheels/downloads)
+ENV UV_CACHE_DIR=/opt/cache/uv \
+    UV_PYTHON_DOWNLOADS=1
 
 # If set to 1, container exits immediately if CUDA isn't usable.
 ENV E2A_REQUIRE_CUDA=1
@@ -57,39 +60,25 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
  && apt-get clean
 
 ######################################################################
-# Miniconda: pinned installer URL + SHA256 (NO "latest")
-######################################################################
-ARG CONDA_INSTALLER_URL="https://repo.anaconda.com/miniconda/Miniconda3-py312_24.9.2-0-Linux-x86_64.sh"
-ARG CONDA_INSTALLER_SHA256="8d936ba600300e08eca3d874dee88c61c6f39303597b2b66baee54af4f7b4122"
-ARG CONDA_DIR="/opt/conda"
-
-RUN curl -fsSL "$CONDA_INSTALLER_URL" -o /tmp/miniconda.sh \
- && echo "${CONDA_INSTALLER_SHA256}  /tmp/miniconda.sh" | sha256sum -c - \
- && bash /tmp/miniconda.sh -b -p "$CONDA_DIR" \
- && rm -f /tmp/miniconda.sh \
- && "$CONDA_DIR/bin/conda" config --system --set auto_update_conda false \
- && "$CONDA_DIR/bin/conda" config --system --set show_channel_urls true \
- && "$CONDA_DIR/bin/conda" clean -afy
-
-ENV PATH="${CONDA_DIR}/bin:${PATH}"
-
-######################################################################
 # Python env: pin Python + pip versions (single source of truth for env)
 ######################################################################
-ARG PY_ENV="py312"
-ENV PY_ENV="${PY_ENV}"
-
+ARG UV_VERSION="0.5.7"
 ARG PYTHON_VERSION="3.12.4"
 ARG PIP_VERSION="24.2"
+ARG VENV_DIR="/opt/venv"
 
 # Pin build tooling too (these otherwise float)
 ARG SETUPTOOLS_VERSION="75.1.0"
 ARG WHEEL_VERSION="0.44.0"
 
-RUN --mount=type=cache,target=/opt/conda/pkgs,sharing=locked \
-    conda create -y -n "$PY_ENV" "python=${PYTHON_VERSION}" "pip=${PIP_VERSION}" \
- && conda clean -afy \
- && conda run -n "$PY_ENV" python -m pip install \
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh -s -- --version "${UV_VERSION}"
+
+ENV PATH="/root/.local/bin:${VENV_DIR}/bin:${PATH}"
+
+RUN --mount=type=cache,target=/opt/cache/uv,sharing=locked \
+    uv python install "${PYTHON_VERSION}" \
+ && uv venv "${VENV_DIR}" --python "${PYTHON_VERSION}" \
+ && uv pip install --python "${VENV_DIR}/bin/python" \
       "pip==${PIP_VERSION}" \
       "setuptools==${SETUPTOOLS_VERSION}" \
       "wheel==${WHEEL_VERSION}"
@@ -115,22 +104,22 @@ RUN printf "%s\n" \
     > /tmp/constraints.txt
 
 # Install torch trio first (then forbid pip from changing it via constraints)
-RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    conda run -n "$PY_ENV" python -m pip install \
+RUN --mount=type=cache,target=/opt/cache/uv,sharing=locked \
+    uv pip install --python "${VENV_DIR}/bin/python" \
       "torch==${TORCH_VER}" \
       "torchvision==${TORCHVISION_VER}" \
       "torchaudio==${TORCHAUDIO_VER}" \
       --index-url "$TORCH_INDEX_URL"
 
-RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    conda run -n "$PY_ENV" python -m pip install \
+RUN --mount=type=cache,target=/opt/cache/uv,sharing=locked \
+    uv pip install --python "${VENV_DIR}/bin/python" \
       --constraint /tmp/constraints.txt \
       --prefer-binary \
       --extra-index-url "$TORCH_INDEX_URL" \
       -r requirements.txt
 
 # Build-time check: confirms CUDA-flavored wheels were installed (no GPU needed at build time)
-RUN conda run -n "$PY_ENV" python -c "\
+RUN "${VENV_DIR}/bin/python" -c "\
 import torch; \
 print('torch', torch.__version__); \
 print('torch.version.cuda', torch.version.cuda); \
@@ -177,4 +166,4 @@ USER user
 
 EXPOSE 7860
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["bash", "-lc", "conda run -n \"$PY_ENV\" python /usr/local/bin/e2a_cuda_preflight.py && conda run -n \"$PY_ENV\" python app.py --server_name 0.0.0.0 --port 7860"]
+CMD ["bash", "-lc", "\"/opt/venv/bin/python\" /usr/local/bin/e2a_cuda_preflight.py && \"/opt/venv/bin/python\" app.py --server_name 0.0.0.0 --port 7860"]
