@@ -11,23 +11,7 @@
 # - apt + conda are not fully reproducible over time unless you also lock/snapshot repos.
 
 ######################################################################
-# Stage 1: Fetch source deterministically (shallow clone + SHA verify)
-######################################################################
-FROM alpine:3.20 AS src
-ARG E2A_REF="v25.12.19"
-ARG E2A_SHA="362dbb1"
-ARG E2A_REPO="https://github.com/DrewThomasson/ebook2audiobook.git"
-
-RUN apk add --no-cache git ca-certificates
-
-RUN git clone --depth 1 --branch "${E2A_REF}" --single-branch "${E2A_REPO}" /repo \
- && cd /repo \
- && git rev-parse HEAD \
- && git rev-parse HEAD | grep -q "^${E2A_SHA}" \
- && rm -rf /repo/.git
-
-######################################################################
-# Stage 2: Runtime image (CUDA devel + pinned Python stack)
+# Runtime image (CUDA devel + pinned Python stack)
 ######################################################################
 FROM nvidia/cuda:12.1.1-devel-ubuntu22.04@sha256:7012e535a47883527d402da998384c30b936140c05e2537158c80b8143ee7425
 
@@ -115,7 +99,7 @@ RUN --mount=type=cache,target=/opt/conda/pkgs,sharing=locked \
 # App source: copy only requirements.txt first for maximum caching
 ######################################################################
 WORKDIR /app/ebook2audiobook
-COPY --from=src /repo/requirements.txt /app/ebook2audiobook/requirements.txt
+COPY requirements.txt /app/ebook2audiobook/requirements.txt
 
 ######################################################################
 # Torch/CUDA: pin known-compatible cu121 trio (official PyTorch guidance)
@@ -157,7 +141,7 @@ assert torch.version.cuda and str(torch.version.cuda).startswith('12.1') \
 ######################################################################
 # Now copy the full app repo (late, so code edits don't bust dependency cache)
 ######################################################################
-COPY --from=src /repo /app/ebook2audiobook
+COPY . /app/ebook2audiobook
 
 ######################################################################
 # Bake UniDic (optional)
