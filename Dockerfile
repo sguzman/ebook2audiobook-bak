@@ -169,35 +169,6 @@ RUN if [ "$BAKE_UNIDIC" = "1" ]; then \
       echo "Skipping UniDic download (BAKE_UNIDIC=0)"; \
     fi
 
-######################################################################
-# Bake Stanza models (build-arg driven, actually baked into the image)
-######################################################################
-ARG STANZA_LANG="en"
-ARG STANZA_PACKAGE="default"
-
-# Make build args visible to the download process (ARG != ENV otherwise)
-ENV STANZA_LANG="${STANZA_LANG}" \
-    STANZA_PACKAGE="${STANZA_PACKAGE}"
-
-RUN --mount=type=cache,target=/stanza-cache,sharing=locked \
-    mkdir -p /opt/cache/stanza \
- && conda run -n "$PY_ENV" python - <<'PY'
-import os
-import stanza
-
-lang = os.environ.get('STANZA_LANG', 'en')
-package = os.environ.get('STANZA_PACKAGE', 'default')
-cache_dir = '/stanza-cache'
-
-print('Downloading Stanza models:', lang, 'package=', package, 'to', cache_dir)
-stanza.download(lang=lang, package=package, model_dir=cache_dir, verbose=True)
-print('Done downloading Stanza models')
-PY
-
-RUN --mount=type=cache,target=/stanza-cache,sharing=locked \
-    rm -rf /opt/cache/stanza/* \
- && cp -a /stanza-cache/. /opt/cache/stanza/
-######################################################################
 # CUDA runtime preflight: fail loud, no silent CPU fallback
 ######################################################################
 RUN cat > /usr/local/bin/e2a_cuda_preflight.py <<'PY'
