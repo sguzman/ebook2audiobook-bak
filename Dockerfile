@@ -74,7 +74,7 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ENV PATH="/root/.local/bin:${VENV_DIR}/bin:${PATH}"
 
-RUN --mount=type=cache,target=/opt/cache/uv,sharing=locked \
+RUN --mount=type=bind,source=/drive/cache/dot-cache/uv,target=/opt/cache/uv \
     uv python install "${PYTHON_VERSION}" \
  && uv venv "${VENV_DIR}" --python "${PYTHON_VERSION}" \
  && uv pip install --python "${VENV_DIR}/bin/python" \
@@ -103,14 +103,14 @@ RUN printf "%s\n" \
     > /tmp/constraints.txt
 
 # Install torch trio first (then forbid pip from changing it via constraints)
-RUN --mount=type=cache,target=/opt/cache/uv,sharing=locked \
+RUN --mount=type=bind,source=/drive/cache/dot-cache/uv,target=/opt/cache/uv \
     uv pip install --python "${VENV_DIR}/bin/python" \
       "torch==${TORCH_VER}" \
       "torchvision==${TORCHVISION_VER}" \
       "torchaudio==${TORCHAUDIO_VER}" \
       --index-url "$TORCH_INDEX_URL"
 
-RUN --mount=type=cache,target=/opt/cache/uv,sharing=locked \
+RUN --mount=type=bind,source=/drive/cache/dot-cache/uv,target=/opt/cache/uv \
     uv pip install --python "${VENV_DIR}/bin/python" \
       --constraint /tmp/constraints.txt \
       --prefer-binary \
