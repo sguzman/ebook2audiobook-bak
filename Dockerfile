@@ -31,7 +31,8 @@ ENV XDG_CACHE_HOME=/opt/cache \
 
 # uv cache (bind-mount at runtime to persist wheels/downloads)
 ENV UV_CACHE_DIR=/opt/cache/uv \
-    UV_PYTHON_DOWNLOADS=1
+    UV_PYTHON_DOWNLOADS=1 \
+    UV_PYTHON_INSTALL_DIR=/opt/uv/python
 
 # If set to 1, container exits immediately if CUDA isn't usable.
 ENV E2A_REQUIRE_CUDA=1
@@ -157,8 +158,8 @@ PY
 # Non-root runtime user (and make caches writable)
 ######################################################################
 RUN useradd -m -u 1000 user \
- && mkdir -p /opt/cache \
- && chown -R user:user /app /opt/cache /opt/venv
+ && mkdir -p /opt/cache /opt/uv \
+ && chown -R user:user /app /opt/cache /opt/venv /opt/uv
 
 USER user
 
