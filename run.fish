@@ -1,4 +1,4 @@
-docker run -it --gpus all --name e2a-gui -p 7860:7860 \
+docker run -it --user 0 --gpus all --name e2a-gui -p 7860:7860 \
     -v "/home/admin/Documents/tts/ebooks:/app/ebooks" \
     -v "/home/admin/Documents/tts/audiobooks:/app/audiobooks" \
     -v "/home/admin/Documents/tts/voices:/app/voices" \
